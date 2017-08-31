@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.lang.ref.WeakReference;
 
 
-public class GifDownloader<CTX extends Context> {
+public abstract class GifDownloader<CTX extends Context> {
 
     @NonNull
     private final WeakReference<CTX> mWeakRef;
@@ -29,8 +29,6 @@ public class GifDownloader<CTX extends Context> {
     private final String mApplicationId;
     @Nullable
     private final File mOutput;
-    @Nullable
-    private final IOnDownloadGifCompleted mListener;
 
     public WeakReference<CTX> getWeakRef() {
         return mWeakRef;
@@ -45,19 +43,16 @@ public class GifDownloader<CTX extends Context> {
      */
     public GifDownloader(@NonNull CTX ctx,
                          @NonNull final String applicationId,
-                         @NonNull String url,
-                         @Nullable IOnDownloadGifCompleted listener) {
-        this(new WeakReference<>(ctx), applicationId, url, listener);
+                         @NonNull String url) {
+        this(new WeakReference<>(ctx), applicationId, url);
     }
 
     public GifDownloader(@NonNull WeakReference<CTX> weakRef,
                          @NonNull final String applicationId,
-                         @NonNull String url,
-                         @Nullable IOnDownloadGifCompleted listener) {
+                         @NonNull String url) {
         mWeakRef = weakRef;
         mApplicationId = applicationId;
-        mOutput = getDestinationFile();
-        mListener = listener;
+        mOutput = getGifDestination();
 
         if (weakRef.get() == null) {
             // reference got GCed, so the download process is not longer needed
@@ -78,11 +73,9 @@ public class GifDownloader<CTX extends Context> {
                     outputStream.close();
                 } catch (IOException e) {
                     onLoadFailed(e, null);
+                    failure();
                 }
-
-                if (mListener != null) {
-                    mListener.success(getUri());
-                }
+                success(getUri());
             }
         };
 
@@ -93,22 +86,42 @@ public class GifDownloader<CTX extends Context> {
                 .into(target);
     }
 
+    /**
+     * Get/Change destination of storing GIF, you may also point this to your cache location as well
+     */
     @Nullable
-    private File getDestinationFile() {
-        final File destinationFile = new File(getGifStorageDir(), generateUniqueFileName());
-        if (destinationFile.exists()) {
-            if (!destinationFile.delete()) {
+    private File getGifDestination() {
+
+        // create the file destination to hold GIF
+        final File file = new File(getGifStorageDir(), generateUniqueGifFileName());
+
+        // check if the creation process was success or not
+        if (file.exists()) {
+            if (!file.delete()) {
+                /*
+                 * SecurityException maybe thrown in here, if that is the case
+                 *
+                 * it mean the system cannot alter the file in this location,
+                 * which is likely to be caused by missing storage permission
+                 */
                 return null;
             }
         }
-        return destinationFile;
+        return file;
     }
 
+    /**
+     * Get/Change the temporary gif file name in here
+     */
     @NonNull
-    private String generateUniqueFileName() {
+    private String generateUniqueGifFileName() {
+        // If you want the file to be hidden, you can also add "." prefix to the file name
         return "gif_name_" + System.nanoTime() + ".gif";
     }
 
+    /**
+     * Get/Change the folder name of storing gif in here
+     */
     @Nullable
     private static File getGifStorageDir() {
         File file = new File(
@@ -123,6 +136,9 @@ public class GifDownloader<CTX extends Context> {
 
     /**
      * API 24+ Compatible method for getting {@link Uri}
+     * <p>
+     * Take a look at the configuration of {@link R.xml#provider_paths} under `res/xml/provide_paths.xml`,
+     * and how it is being declared on the {@code AndroidManifest} under {@code <provider />} tag
      */
     private Uri getUri() {
         if (Build.VERSION.SDK_INT < 24) {
@@ -132,9 +148,7 @@ public class GifDownloader<CTX extends Context> {
         }
     }
 
-    public interface IOnDownloadGifCompleted {
-        void success(@Nullable Uri uri);
+    public abstract void success(@Nullable Uri uri);
 
-        void failure();
-    }
+    public abstract void failure();
 }
