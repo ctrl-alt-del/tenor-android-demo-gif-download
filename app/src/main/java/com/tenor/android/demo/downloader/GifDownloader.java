@@ -1,0 +1,140 @@
+package com.tenor.android.demo.downloader;
+
+import android.content.Context;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Environment;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.v4.content.FileProvider;
+import android.text.TextUtils;
+
+import com.bumptech.glide.DrawableTypeRequest;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.request.animation.GlideAnimation;
+import com.bumptech.glide.request.target.SimpleTarget;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.lang.ref.WeakReference;
+
+
+public class GifDownloader<CTX extends Context> {
+
+    @NonNull
+    private final WeakReference<CTX> mWeakRef;
+    @NonNull
+    private final String mApplicationId;
+    @Nullable
+    private final File mOutput;
+    @Nullable
+    private final IOnDownloadGifCompleted mListener;
+
+    public WeakReference<CTX> getWeakRef() {
+        return mWeakRef;
+    }
+
+    /**
+     * Constructor that wraps the context up with WeakReference to avoid memory leak due to async downloading process
+     * use application context if you want the downloading process to be persisted
+     *
+     * @param ctx the subclass of {@link Context}
+     * @param url the gif url of your interest
+     */
+    public GifDownloader(@NonNull CTX ctx,
+                         @NonNull final String applicationId,
+                         @NonNull String url,
+                         @Nullable IOnDownloadGifCompleted listener) {
+        this(new WeakReference<>(ctx), applicationId, url, listener);
+    }
+
+    public GifDownloader(@NonNull WeakReference<CTX> weakRef,
+                         @NonNull final String applicationId,
+                         @NonNull String url,
+                         @Nullable IOnDownloadGifCompleted listener) {
+        mWeakRef = weakRef;
+        mApplicationId = applicationId;
+        mOutput = getDestinationFile();
+        mListener = listener;
+
+        if (weakRef.get() == null) {
+            // reference got GCed, so the download process is not longer needed
+            return;
+        }
+
+        if (TextUtils.isEmpty(url)) {
+            throw new IllegalArgumentException("url cannot be empty");
+        }
+
+
+        final SimpleTarget<byte[]> target = new SimpleTarget<byte[]>() {
+            @Override
+            public void onResourceReady(byte[] resource, GlideAnimation<? super byte[]> glideAnimation) {
+                try {
+                    FileOutputStream outputStream = new FileOutputStream(mOutput);
+                    outputStream.write(resource);
+                    outputStream.close();
+                } catch (IOException e) {
+                    onLoadFailed(e, null);
+                }
+
+                if (mListener != null) {
+                    mListener.success(getUri());
+                }
+            }
+        };
+
+        DrawableTypeRequest<String> request = Glide.with(weakRef.get()).load(url);
+        request.diskCacheStrategy(DiskCacheStrategy.SOURCE);
+        request.asGif()
+                .toBytes()
+                .into(target);
+    }
+
+    @Nullable
+    private File getDestinationFile() {
+        final File destinationFile = new File(getGifStorageDir(), generateUniqueFileName());
+        if (destinationFile.exists()) {
+            if (!destinationFile.delete()) {
+                return null;
+            }
+        }
+        return destinationFile;
+    }
+
+    @NonNull
+    private String generateUniqueFileName() {
+        return "gif_name_" + System.nanoTime() + ".gif";
+    }
+
+    @Nullable
+    private static File getGifStorageDir() {
+        File file = new File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
+                "gif_folder_name");
+        if (!file.exists() && !file.mkdirs()) {
+            // create folder fail, likely missing storage permission, handle permission request here
+            return null;
+        }
+        return file;
+    }
+
+    /**
+     * API 24+ Compatible method for getting {@link Uri}
+     */
+    private Uri getUri() {
+        if (Build.VERSION.SDK_INT < 24) {
+            return Uri.fromFile(mOutput);
+        } else {
+            return FileProvider.getUriForFile(mWeakRef.get(), mApplicationId + ".provider", mOutput);
+        }
+    }
+
+    public interface IOnDownloadGifCompleted {
+        void success(@Nullable Uri uri);
+
+        void failure();
+    }
+}
