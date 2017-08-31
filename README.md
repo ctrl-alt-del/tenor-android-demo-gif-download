@@ -4,11 +4,11 @@ This demo shows how to create a `Uri` using [Glide](https://github.com/bumptech/
 
 
 ## Creating a `Uri` from a GIF Url
-To create a `Uri` using the GIF `url` provided by [Tenor's API Response](https://tenor.com/gifapi#Result), the GIF content needs to be first stored in the file sytem of a phone.  The [GifDownloader][gifdownloader] class show in details on how this process is being done.  You can change the GIF storage location by modifying/overriding the `getGifDestination()`, `getGifStorageDir()` and `generateUniqueGifFileName()` method in the [GifDownloader][gifdownloader] class.
+To create a `Uri` using the GIF `url` provided by [Tenor's API Response](https://tenor.com/gifapi#Result), the GIF content needs to be first stored in the file sytem of a phone.  The [GifDownloader](https://github.com/ctrl-alt-del/tenor-android-demo-gif-download/blob/master/app/src/main/java/com/tenor/android/demo/downloader/GifDownloader.java) class show in details on how this process is being done.  You can change the GIF storage location by modifying/overriding the `getGifDestination()`, `getGifStorageDir()` and `generateUniqueGifFileName()` method in the [GifDownloader](https://github.com/ctrl-alt-del/tenor-android-demo-gif-download/blob/master/app/src/main/java/com/tenor/android/demo/downloader/GifDownloader.java) class.
 
 
 ## MimeType
-The file of GIF content created using [GifDownloader][gifdownloader] is set to be `image/gif`.  This is done by setting the suffix of the file name returned by `generateUniqueGifFileName()` with `.gif`.
+The file of GIF content created using [GifDownloader](https://github.com/ctrl-alt-del/tenor-android-demo-gif-download/blob/master/app/src/main/java/com/tenor/android/demo/downloader/GifDownloader.java) is set to be `image/gif`.  This is done by setting the suffix of the file name returned by `generateUniqueGifFileName()` with `.gif`.
 
 
 ## Committing GIF Content to an App
