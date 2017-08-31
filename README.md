@@ -15,23 +15,23 @@ The file of GIF content created using [GifDownloader][gifdownloader] is set to b
 Google provides some excellent code snippets on how to commit GIF content to an app:
 ```java
 /**
-* Commits a GIF image
-*
-* @param contentUri Content URI of the GIF image to be sent
-* @param imageDescription Description of the GIF image to be sent
-*/
+ * Commits a GIF image
+ *
+ * @param contentUri Content URI of the GIF image to be sent
+ * @param imageDescription Description of the GIF image to be sent
+ */
 public static void commitGifImage(Uri contentUri, String imageDescription) {
-InputContentInfoCompat inputContentInfo = new InputContentInfoCompat(
-contentUri,
-new ClipDescription(imageDescription, new String[]{"image/gif"}));
-InputConnection inputConnection = getCurrentInputConnection();
-EditorInfo editorInfo = getCurrentInputEditorInfo();
-Int flags = 0;
-if (android.os.Build.VERSION.SDK_INT >= 25) {
-flags |= InputConnectionCompat.INPUT_CONTENT_GRANT_READ_URI_PERMISSION;
-}
-InputConnectionCompat.commitContent(
-inputConnection, editorInfo, inputContentInfo, flags, opts);
+    InputContentInfoCompat inputContentInfo = new InputContentInfoCompat(
+            contentUri,
+            new ClipDescription(imageDescription, new String[]{"image/gif"}));
+    InputConnection inputConnection = getCurrentInputConnection();
+    EditorInfo editorInfo = getCurrentInputEditorInfo();
+    Int flags = 0;
+    if (android.os.Build.VERSION.SDK_INT >= 25) {
+        flags |= InputConnectionCompat.INPUT_CONTENT_GRANT_READ_URI_PERMISSION;
+    }
+    InputConnectionCompat.commitContent(
+            inputConnection, editorInfo, inputContentInfo, flags, opts);
 }
 ```
 Google's full examples and explanations are available in [here](https://developer.android.com/guide/topics/text/image-keyboard.html#adding_image_support_to_imes).
